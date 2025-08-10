@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 firebase-credentials.json
 .env
+uploaded_photos/
