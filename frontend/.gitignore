@@ -1,0 +1,52 @@
+# Create .gitignore in repo root
+cat > .gitignore << 'EOF'
+# Dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+
+echo "*.DS_Store" >> .gitignore
+echo "backend/app/uploaded_photos/*" >> .gitignore
+echo "!backend/app/uploaded_photos/.gitkeep" >> .gitignore
+
+# Expo
+.expo/
+*/.expo/
+**/.expo/
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# iOS
+ios/Pods/
+ios/build/
+*.ipa
+
+# Android
+android/.gradle/
+android/build/
+*.apk
+EOFnode_modules/
+*/node_modules/
