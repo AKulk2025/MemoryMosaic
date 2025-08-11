@@ -6,12 +6,16 @@ from supabase import create_client
 import uuid
 import os
 
+from dotenv import load_dotenv
+
 app = FastAPI()
 
-#app.mount("/uploaded_photos", StaticFiles(directory="app/uploaded_photos"), name="uploaded_photos")
+load_dotenv()  # loads variables from .env file
 
-SUPABASE_URL = "https://itshkkqzqobiorqakeyk.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0c2hra3F6cW9iaW9ycWFrZXlrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDkyMDE0OCwiZXhwIjoyMDcwNDk2MTQ4fQ.449KwAysQCJUVSL3iq_5ec35SOsiJFLk6AaKlyxC_tQ"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
