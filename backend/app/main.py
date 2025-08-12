@@ -1,7 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
 import uuid
 import os
@@ -10,7 +8,15 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-load_dotenv()  # loads variables from .env file
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+load_dotenv()  
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
