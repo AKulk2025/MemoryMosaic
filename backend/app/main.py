@@ -19,21 +19,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-class Photo(BaseModel):
-    title: str
-    description: str
-    latitude: float
-    longitude: float
-    id: int
-    image_filename: str
-    url: str
-
-photos_db: List[Photo] = []
 @app.get("/")
 async def root():
     return {"status": "Backend is online"}
-
-
 
 @app.post("/photos/")
 async def add_photo(
@@ -61,7 +49,8 @@ async def add_photo(
     return {"message": "Photo uploaded successfully!", "photo": insert_response.data[0]}
 
 
-@app.get('/photos/', response_model=List[Photo])
+@app.get('/photos/')
 async def get_photos():
-    return photos_db
+    response = supabase.table("photos").select("*").execute()
+    return response.data
 
