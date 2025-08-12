@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { StyleSheet, View, TouchableOpacity, Text, Alert } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
@@ -8,9 +8,14 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState("back");
+  const [isUploading, setIsUploading] = useState(false); // Add loading state
 
   const takePicture = async () => {
+    if (isUploading) return; // Prevent multiple uploads
+    
     try {
+      setIsUploading(true); 
+      
       if (cameraRef.current) {
         // Get current location
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -66,12 +71,14 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
           address: address || "Location unavailable",
         };
 
-        onPhotoTaken(photoWithMetadata);
+        await onPhotoTaken(photoWithMetadata);
         navigation.goBack();
       }
     } catch (error) {
       console.log("Error taking picture:", error);
       Alert.alert("Error", "Failed to take picture");
+    } finally {
+      setIsUploading(false); // Stop loading
     }
   };
 
@@ -106,26 +113,50 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
         facing={facing}
       >
         {/* Camera flip button */}
-        <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+        <TouchableOpacity 
+          style={[styles.flipButton, isUploading && styles.disabledButton]} 
+          onPress={toggleCameraFacing}
+          disabled={isUploading}
+        >
           <MaterialCommunityIcons 
             name="camera-flip-outline" 
             size={28} 
-            color="#fff" 
+            color={isUploading ? "#999" : "#fff"} 
           />
         </TouchableOpacity>
 
         {/* Capture button */}
-        <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-          <MaterialCommunityIcons name="camera" size={36} color="#fff" />
+        <TouchableOpacity 
+          style={[styles.captureButton, isUploading && styles.disabledCaptureButton]} 
+          onPress={takePicture}
+          disabled={isUploading}
+        >
+          {isUploading ? (
+            <ActivityIndicator size="large" color="#fff" />
+          ) : (
+            <MaterialCommunityIcons name="camera" size={36} color="#fff" />
+          )}
         </TouchableOpacity>
 
         {/* Back button */}
         <TouchableOpacity 
-          style={styles.backButton} 
+          style={[styles.backButton, isUploading && styles.disabledButton]} 
           onPress={() => navigation.goBack()}
+          disabled={isUploading}
         >
-          <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
+          <MaterialCommunityIcons 
+            name="arrow-left" 
+            size={28} 
+            color={isUploading ? "#999" : "#fff"} 
+          />
         </TouchableOpacity>
+
+        {/* Upload status */}
+        {isUploading && (
+          <View style={styles.uploadStatus}>
+            <Text style={styles.uploadText}>Uploading photo...</Text>
+          </View>
+        )}
       </CameraView>
     </View>
   );
@@ -160,6 +191,9 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#fff",
   },
+  disabledCaptureButton: {
+    backgroundColor: "#999",
+  },
   flipButton: {
     position: "absolute",
     top: 60,
@@ -181,6 +215,23 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: "center",
     alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "rgba(100,100,100,0.6)",
+  },
+  uploadStatus: {
+    position: "absolute",
+    bottom: 140,
+    alignSelf: "center",
+    backgroundColor: "rgba(0,0,0,0.8)",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  uploadText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
   noAccessContainer: {
     flex: 1,

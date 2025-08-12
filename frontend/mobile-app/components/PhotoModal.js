@@ -13,8 +13,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 export default function PhotoModal({ visible, onClose, photo }) {
   if (!photo) return null;
 
+  // Handle both server photos (image_url) and local photos (uri)
+  const imageSource = photo.image_url || photo.uri;
+  
+  console.log("PhotoModal photo data:", photo); // Debug log
+
   const formatDateTime = (isoString) => {
-    if (!isoString) return "Unknown time";
+    if (!isoString) return { dateStr: "Unknown date", timeStr: "Unknown time" };
     
     const date = new Date(isoString);
     const dateStr = date.toLocaleDateString('en-US', { 
@@ -32,7 +37,23 @@ export default function PhotoModal({ visible, onClose, photo }) {
     return { dateStr, timeStr };
   };
 
-  const { dateStr, timeStr } = formatDateTime(photo.timestamp);
+  const { dateStr, timeStr } = formatDateTime(photo.timestamp || photo.created_at);
+
+  // Get title - handle different data sources
+  const getTitle = () => {
+    if (photo.title) return photo.title;
+    if (photo.timestamp || photo.created_at) {
+      return `Photo taken ${dateStr}`;
+    }
+    return "Untitled Photo";
+  };
+
+  // Get description/address - handle different data sources  
+  const getDescription = () => {
+    if (photo.description) return photo.description;
+    if (photo.address) return photo.address;
+    return "No description available";
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -45,11 +66,26 @@ export default function PhotoModal({ visible, onClose, photo }) {
 
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Photo */}
-            <Image
-              source={{ uri: photo.uri }}
-              style={styles.image}
-              resizeMode="cover"
-            />
+            {imageSource ? (
+              <Image
+                source={{ uri: imageSource }}
+                style={styles.image}
+                resizeMode="cover"
+                onError={(error) => {
+                  console.log("Image load error:", error);
+                }}
+              />
+            ) : (
+              <View style={[styles.image, styles.noImageContainer]}>
+                <MaterialCommunityIcons name="image-off" size={50} color="#ccc" />
+                <Text style={styles.noImageText}>Image not available</Text>
+              </View>
+            )}
+
+            {/* Title */}
+            <View style={styles.titleContainer}>
+              <Text style={styles.photoTitle}>{getTitle()}</Text>
+            </View>
 
             {/* Metadata */}
             <View style={styles.metadataContainer}>
@@ -79,13 +115,29 @@ export default function PhotoModal({ visible, onClose, photo }) {
                 <View style={styles.metadataTextContainer}>
                   <Text style={styles.metadataLabel}>Where</Text>
                   <Text style={styles.metadataValue}>
-                    {photo.address || "Unknown location"}
+                    {getDescription()}
                   </Text>
                   {photo.latitude && photo.longitude && (
                     <Text style={styles.coordinatesText}>
                       {photo.latitude.toFixed(4)}, {photo.longitude.toFixed(4)}
                     </Text>
                   )}
+                </View>
+              </View>
+
+              {/* Photo source indicator */}
+              <View style={styles.metadataRow}>
+                <MaterialCommunityIcons 
+                  name={photo.image_url ? "cloud-check" : "cellphone"} 
+                  size={20} 
+                  color={photo.image_url ? "#4CAF50" : "#FF9800"} 
+                  style={styles.metadataIcon}
+                />
+                <View style={styles.metadataTextContainer}>
+                  <Text style={styles.metadataLabel}>Status</Text>
+                  <Text style={styles.metadataValue}>
+                    {photo.image_url ? "Synced to cloud" : "Stored locally"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -149,9 +201,32 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
+  noImageContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  noImageText: {
+    color: "#ccc",
+    fontSize: 14,
+    marginTop: 8,
+  },
+  titleContainer: {
+    width: "100%",
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 5,
+  },
+  photoTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+  },
   metadataContainer: {
     width: "100%",
     padding: 20,
+    paddingTop: 10,
   },
   metadataRow: {
     flexDirection: "row",

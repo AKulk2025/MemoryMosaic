@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   Platform,
   Text,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,6 +24,7 @@ export default function MapScreen({ navigation, photos }) {
   // Modal state management
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -85,14 +88,28 @@ export default function MapScreen({ navigation, photos }) {
     return `${diffInDays}d ago`;
   };
 
+  // Function to handle refresh (optional - for pull to refresh)
+  const handleRefresh = () => {
+    setIsLoading(true);
+    // Simulate refresh - in a real app, this might refetch from server
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Memory Mosaic</Text>
-        {photos.length > 0 && (
-          <Text style={styles.subtitle}>
-            {photos.length} {photos.length === 1 ? 'memory' : 'memories'} captured
-          </Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Memory Mosaic</Text>
+          {photos.length > 0 && (
+            <Text style={styles.subtitle}>
+              {photos.length} {photos.length === 1 ? 'memory' : 'memories'} captured
+            </Text>
+          )}
+        </View>
+        {isLoading && (
+          <ActivityIndicator size="small" color="#6200ee" style={styles.headerLoader} />
         )}
       </View>
       
@@ -102,6 +119,13 @@ export default function MapScreen({ navigation, photos }) {
         onRegionChangeComplete={setRegion}
         showsUserLocation
         customMapStyle={mapStyle}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={handleRefresh}
+            tintColor="#6200ee"
+          />
+        }
       >
         {validPhotos.map((photo) => (
           <Marker
@@ -137,11 +161,19 @@ export default function MapScreen({ navigation, photos }) {
         <MaterialCommunityIcons name="plus" size={32} color="#fff" />
       </TouchableOpacity>
       
-      {/* Photo count indicator */}
+      {/* Photo count indicator with server status */}
       {photos.length > 0 && (
         <View style={styles.photoCounter}>
           <MaterialCommunityIcons name="image-multiple" size={16} color="#6200ee" />
           <Text style={styles.photoCountText}>{photos.length}</Text>
+          {/* Optional: Add indicator for synced vs local photos */}
+          <View style={styles.syncIndicator}>
+            <MaterialCommunityIcons 
+              name="cloud-check" 
+              size={12} 
+              color="#4CAF50" 
+            />
+          </View>
         </View>
       )}
       
@@ -168,6 +200,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
     zIndex: 2,
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  headerContent: {
+    alignItems: "center",
+    flex: 1,
+  },
+  headerLoader: {
+    position: "absolute",
+    right: 20,
+    top: 60,
   },
   title: {
     fontSize: 28,
@@ -224,6 +267,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#6200ee",
+  },
+  syncIndicator: {
+    marginLeft: 6,
   },
   customMarker: {
     backgroundColor: "#6200ee",
