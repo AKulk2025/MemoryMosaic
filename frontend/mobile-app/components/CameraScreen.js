@@ -78,7 +78,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
       console.log("Error taking picture:", error);
       Alert.alert("Error", "Failed to take picture");
     } finally {
-      setIsUploading(false); // Stop loading
+      setIsUploading(false); 
     }
   };
 

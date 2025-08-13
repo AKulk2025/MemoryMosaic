@@ -9,8 +9,8 @@ const Stack = createStackNavigator();
 
 // Expo-specific backend URL configuration
 const BACKEND_URL = __DEV__ 
-  ? "http://COMP_IP:8000"  // Replace with YOUR computer's IP address
-  : "https://your-production-backend.com"; // Production URL
+  ? "http://COMP_IP:8000"  
+  : "https://your-production-backend.com"; 
 
 export default function App() {
   const [photos, setPhotos] = useState([]);

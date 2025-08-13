@@ -166,7 +166,6 @@ export default function MapScreen({ navigation, photos }) {
         <View style={styles.photoCounter}>
           <MaterialCommunityIcons name="image-multiple" size={16} color="#6200ee" />
           <Text style={styles.photoCountText}>{photos.length}</Text>
-          {/* Optional: Add indicator for synced vs local photos */}
           <View style={styles.syncIndicator}>
             <MaterialCommunityIcons 
               name="cloud-check" 
@@ -177,7 +176,7 @@ export default function MapScreen({ navigation, photos }) {
         </View>
       )}
       
-      {/* Add the PhotoModal here - now passing full photo object */}
+      {/* Photo modal for displaying photo details */}
       <PhotoModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
