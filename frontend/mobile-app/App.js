@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import MapScreen from "./components/MapScreen";
 import CameraScreen from "./components/CameraScreen";
 
@@ -9,7 +9,9 @@ const Stack = createStackNavigator();
 
 // Expo-specific backend URL configuration
 const BACKEND_URL = __DEV__ 
-  ? "http://COMP_IP:8000"  
+  ? Platform.OS === 'android' 
+    ? "http://10.0.2.2:8000"  // Android emulator localhost
+    : "http://192.168.1.34:8000"  // iOS simulator
   : "https://your-production-backend.com"; 
 
 export default function App() {
@@ -26,7 +28,14 @@ export default function App() {
       setIsLoading(true);
       console.log("Fetching photos from:", `${BACKEND_URL}/photos/`);
       
-      const response = await fetch(`${BACKEND_URL}/photos/`);
+      const response = await fetch(`${BACKEND_URL}/photos/`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000,
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,7 +46,8 @@ export default function App() {
       console.log("Photos fetched successfully:", data.length);
     } catch (error) {
       console.error("Error fetching photos:", error);
-      Alert.alert("Error", "Failed to fetch photos from server. Make sure your backend is running.");
+      // Don't show alert for network errors on app startup - just log
+      console.log("Failed to fetch photos from server. Using local data only.");
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +58,7 @@ export default function App() {
       setIsLoading(true);
       console.log("Uploading photo to backend...", photo);
       
-      // Create FormData for multipart upload - matching your backend exactly
+      // Create FormData for multipart upload
       const formData = new FormData();
       
       // Add the image file
@@ -69,9 +79,10 @@ export default function App() {
       const response = await fetch(`${BACKEND_URL}/photos/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
         },
         body: formData,
+        timeout: 30000,
       });
 
       if (!response.ok) {
@@ -91,7 +102,7 @@ export default function App() {
       
     } catch (error) {
       console.error("Error uploading photo:", error);
-      Alert.alert("Upload Error", `Failed to upload photo: ${error.message}`);
+      Alert.alert("Upload Error", `Failed to upload photo: ${error.message}\n\nPhoto saved locally instead.`);
       throw error;
     } finally {
       setIsLoading(false);
@@ -113,9 +124,10 @@ export default function App() {
         const localPhoto = {
           ...photo,
           id: Date.now(),
-          title: photo.title || `Photo taken at ${new Date().toLocaleString()}`,
+          title: photo.title,
           description: photo.address || '',
           image_url: photo.uri, // Use local URI for display
+          timestamp: photo.timestamp,
         };
         setPhotos(prevPhotos => [...prevPhotos, localPhoto]);
       }
@@ -139,6 +151,7 @@ export default function App() {
             <MapScreen 
               {...props} 
               photos={photos}
+              isLoading={isLoading}
             />
           )}
         </Stack.Screen>

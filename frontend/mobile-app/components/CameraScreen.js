@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { StyleSheet, View, TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Text, Alert, ActivityIndicator, Platform } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
@@ -8,7 +8,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState("back");
-  const [isUploading, setIsUploading] = useState(false); // Add loading state
+  const [isUploading, setIsUploading] = useState(false);
 
   const takePicture = async () => {
     if (isUploading) return; // Prevent multiple uploads
@@ -17,49 +17,60 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
       setIsUploading(true); 
       
       if (cameraRef.current) {
-        // Get current location
+        // Get current location with better Android compatibility
         const { status } = await Location.requestForegroundPermissionsAsync();
         let location = null;
         let address = null;
 
         if (status === "granted") {
-          const currentLocation = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-          location = currentLocation.coords;
-
-          // Get address/area name (city and region only)
           try {
-            const reverseGeocode = await Location.reverseGeocodeAsync({
-              latitude: location.latitude,
-              longitude: location.longitude,
+            const currentLocation = await Location.getCurrentPositionAsync({
+              accuracy: Platform.OS === 'android' ? Location.Accuracy.Balanced : Location.Accuracy.High,
+              timeout: 15000,
+              maximumAge: 10000,
             });
-            
-            if (reverseGeocode.length > 0) {
-              const place = reverseGeocode[0];
-              // Create a simple city, state format
-              const cityName = place.city || place.subregion || place.district;
-              const regionName = place.region || place.country;
+            location = currentLocation.coords;
+
+            // Get address/area name (city and region only)
+            try {
+              const reverseGeocode = await Location.reverseGeocodeAsync({
+                latitude: location.latitude,
+                longitude: location.longitude,
+              });
               
-              if (cityName && regionName) {
-                address = `${cityName}, ${regionName}`;
-              } else if (cityName) {
-                address = cityName;
-              } else if (regionName) {
-                address = regionName;
-              } else {
-                address = "Unknown location";
+              if (reverseGeocode.length > 0) {
+                const place = reverseGeocode[0];
+                // Create a simple city, state format
+                const cityName = place.city || place.subregion || place.district;
+                const regionName = place.region || place.country;
+                
+                if (cityName && regionName) {
+                  address = `${cityName}, ${regionName}`;
+                } else if (cityName) {
+                  address = cityName;
+                } else if (regionName) {
+                  address = regionName;
+                } else {
+                  address = "Unknown location";
+                }
               }
+            } catch (error) {
+              console.log("Error getting address:", error);
+              address = "Unknown location";
             }
-          } catch (error) {
-            console.log("Error getting address:", error);
-            address = "Unknown location";
+          } catch (locationError) {
+            console.log("Error getting location:", locationError);
+            Alert.alert(
+              "Location Error", 
+              "Unable to get current location. Photo will be saved without location data."
+            );
           }
         }
 
         const photo = await cameraRef.current.takePictureAsync({
           exif: true,
-          quality: 0.8,
+          quality: Platform.OS === 'android' ? 0.7 : 0.8,
+          skipProcessing: Platform.OS === 'android',
         });
 
         // Create photo object with metadata
@@ -76,7 +87,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
       }
     } catch (error) {
       console.log("Error taking picture:", error);
-      Alert.alert("Error", "Failed to take picture");
+      Alert.alert("Error", "Failed to take picture. Please try again.");
     } finally {
       setIsUploading(false); 
     }
@@ -90,6 +101,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
     return (
       <View style={styles.noAccessContainer}>
         <Text style={styles.noAccessText}>Loading camera...</Text>
+        <ActivityIndicator size="large" color="#6200ee" style={{ marginTop: 20 }} />
       </View>
     );
   }
@@ -111,6 +123,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
         style={styles.camera} 
         ref={cameraRef}
         facing={facing}
+        animateShutter={false}
       >
         {/* Camera flip button */}
         <TouchableOpacity 
@@ -154,7 +167,7 @@ export default function CameraScreen({ navigation, onPhotoTaken }) {
         {/* Upload status */}
         {isUploading && (
           <View style={styles.uploadStatus}>
-            <Text style={styles.uploadText}>Uploading photo...</Text>
+            <Text style={styles.uploadText}>Processing photo...</Text>
           </View>
         )}
       </CameraView>
@@ -196,7 +209,7 @@ const styles = StyleSheet.create({
   },
   flipButton: {
     position: "absolute",
-    top: 60,
+    top: Platform.OS === 'ios' ? 60 : 50,
     right: 20,
     backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 25,
@@ -207,7 +220,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 60,
+    top: Platform.OS === 'ios' ? 60 : 50,
     left: 20,
     backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 25,

@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import PhotoModal from "./PhotoModal";
@@ -25,13 +25,16 @@ export default function MapScreen({ navigation, photos }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
-          let location = await Location.getCurrentPositionAsync({});
+          let location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
           setRegion({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
@@ -47,7 +50,7 @@ export default function MapScreen({ navigation, photos }) {
 
   // Auto-center map on new photo
   useEffect(() => {
-    if (photos.length > 0) {
+    if (photos.length > 0 && mapReady) {
       const latestPhoto = photos[photos.length - 1];
       if (latestPhoto.latitude && latestPhoto.longitude) {
         setRegion({
@@ -58,11 +61,15 @@ export default function MapScreen({ navigation, photos }) {
         });
       }
     }
-  }, [photos.length]);
+  }, [photos.length, mapReady]);
 
   const handlePinPress = (photo) => {
     setSelectedPhoto(photo);
     setModalVisible(true);
+  };
+
+  const handleMapReady = () => {
+    setMapReady(true);
   };
 
   // Filter out photos without valid coordinates
@@ -117,8 +124,12 @@ export default function MapScreen({ navigation, photos }) {
         style={styles.map}
         region={region}
         onRegionChangeComplete={setRegion}
-        showsUserLocation
-        customMapStyle={mapStyle}
+        onMapReady={handleMapReady}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
+        toolbarEnabled={false}
+        loadingEnabled={true}
+        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
@@ -127,6 +138,13 @@ export default function MapScreen({ navigation, photos }) {
           />
         }
       >
+        {/* OpenStreetMap tiles - works on both platforms without API key */}
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+        />
+        
         {validPhotos.map((photo) => (
           <Marker
             key={photo.id}
@@ -192,7 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f6fa",
   },
   header: {
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
     paddingBottom: 16,
     backgroundColor: "#fff",
     alignItems: "center",
@@ -209,7 +227,7 @@ const styles = StyleSheet.create({
   headerLoader: {
     position: "absolute",
     right: 20,
-    top: 60,
+    top: Platform.OS === 'ios' ? 60 : 50,
   },
   title: {
     fontSize: 28,
@@ -299,39 +317,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
-// Your mapStyle remains the same...
-const mapStyle = [
-  {
-    elementType: "geometry",
-    stylers: [{ color: "#ebe3cd" }],
-  },
-  {
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#523735" }],
-  },
-  {
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#f5f6fa" }],
-  },
-  {
-    featureType: "administrative",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#c9b2a6" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#dfd2ae" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#f5f1e6" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry.fill",
-    stylers: [{ color: "#b9d3c2" }],
-  },
-];

@@ -42,9 +42,6 @@ export default function PhotoModal({ visible, onClose, photo }) {
   // Get title - handle different data sources
   const getTitle = () => {
     if (photo.title) return photo.title;
-    if (photo.timestamp || photo.created_at) {
-      return `Photo taken ${dateStr}`;
-    }
     return "Untitled Photo";
   };
 
@@ -99,8 +96,8 @@ export default function PhotoModal({ visible, onClose, photo }) {
                 />
                 <View style={styles.metadataTextContainer}>
                   <Text style={styles.metadataLabel}>When</Text>
-                  <Text style={styles.metadataValue}>{dateStr}</Text>
-                  <Text style={styles.metadataTime}>{timeStr}</Text>
+                  <Text style={styles.metadataValue}>${dateStr}</Text>
+                  <Text style={styles.metadataTime}>${timeStr}</Text>
                 </View>
               </View>
 
