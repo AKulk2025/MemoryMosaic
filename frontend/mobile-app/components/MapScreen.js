@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import PhotoModal from "./PhotoModal";
@@ -112,21 +112,21 @@ export default function MapScreen({ navigation, photos }) {
           <ActivityIndicator size="small" color="#6200ee" style={styles.headerLoader} />
         )}
       </View>
-      
+    
       <MapView
         style={styles.map}
         region={region}
         onRegionChangeComplete={setRegion}
         showsUserLocation
         customMapStyle={mapStyle}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={handleRefresh}
-            tintColor="#6200ee"
-          />
-        }
       >
+        {/* OSM Tile Overlay */}
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+        />
+
         {validPhotos.map((photo) => (
           <Marker
             key={photo.id}
@@ -135,24 +135,10 @@ export default function MapScreen({ navigation, photos }) {
               longitude: photo.longitude,
             }}
             onPress={() => handlePinPress(photo)}
-          >
-            <View style={styles.customMarker}>
-              <MaterialCommunityIcons 
-                name="camera" 
-                size={20} 
-                color="#fff" 
-              />
-              {photo.timestamp && (
-                <View style={styles.markerTimeTag}>
-                  <Text style={styles.markerTimeText}>
-                    {getTimeSincePhoto(photo.timestamp)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </Marker>
+          />
         ))}
       </MapView>
+
       
       <TouchableOpacity
         style={styles.fab}
