@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 @RestController
@@ -25,7 +26,7 @@ public class PhotoController {
     }
 
     @PostMapping(path = "/photo/upload")
-    public ResponseEntity<PhotoDto> testFileUpload(@RequestParam("photo") MultipartFile file) {
+    public ResponseEntity<PhotoDto> testFileUpload(@RequestParam("photo") MultipartFile file) throws IOException {
         PhotoEntity photoEntity = photoService.uploadPhoto(file);
         return new ResponseEntity<>(photoMapper.mapTo(photoEntity), HttpStatus.OK);
     }
