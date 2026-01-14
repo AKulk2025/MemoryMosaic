@@ -16,28 +16,17 @@ import java.time.LocalDateTime;
 
 @RestController
 public class PhotoController {
-    private StorageService storageService;
     private PhotoService photoService;
     private Mapper<PhotoEntity, PhotoDto> photoMapper;
 
-    public PhotoController(StorageService storageService, PhotoService photoService, Mapper<PhotoEntity, PhotoDto> photoMapper) {
-        this.storageService = storageService;
+    public PhotoController(PhotoService photoService, Mapper<PhotoEntity, PhotoDto> photoMapper) {
         this.photoService = photoService;
         this.photoMapper = photoMapper;
     }
 
     @PostMapping(path = "/photo/upload")
     public ResponseEntity<PhotoDto> testFileUpload(@RequestParam("photo") MultipartFile file) {
-        String filePath = storageService.store(file);
-        PhotoEntity photoEntity = PhotoEntity.builder()
-                .filePath(filePath)
-                .uploadedAt(LocalDateTime.now())
-                .latitude(null)
-                .longitude(null)
-                .userId(null)
-                .build();
-
-        photoService.savePhoto(photoEntity);
+        PhotoEntity photoEntity = photoService.uploadPhoto(file);
         return new ResponseEntity<>(photoMapper.mapTo(photoEntity), HttpStatus.OK);
     }
 }
